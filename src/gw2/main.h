@@ -8,200 +8,72 @@
 #include "hacklib/Main.h"
 #include "hacklib/ConsoleEx.h"
 #include "hacklib/Hooker.h"
-#include "hacklib/DrawerD3D.h"
-#include "hacklib/WindowOverlay.h"
-
 #include <mutex>
 
+// 统一的异常宏
 #define HLGW2_EXCEPTION(msg) ExceptHandler(msg, GetExceptionCode(), GetExceptionInformation(), __FILE__, __FUNCTION__, __LINE__)
 
+// 轻量日志追踪
 #define DEBUG_TRACER_LIST_MAX 10
-#define TRACER(format) (GetMain()->debug_tracer_list_push(format))
-#define TRACER_PRINT (GetMain()->debug_tracer_list_print())
+#define TRACER(format) 
 
-class Gw2HackMain *GetMain();
-int64_t GetTimestamp();
-DWORD ExceptHandler(const char*, DWORD, EXCEPTION_POINTERS*, const char*, const char*, int);
-std::string ConvertWcharToStr(const wchar_t *in);
-
-template<typename T>
-void __fastcall DecodeTextCB(std::string* ctx, wchar_t *decodedText);
-void __fastcall DecodeTextStripColorCB(std::string* ctx, wchar_t *decodedText);
-
-#define CALL_FN(conv) ((T(conv*)(Ts...))m_ptr)(args...)
-enum CallingConvention {
-    CALL_CONV_FASTCALL,
-    CALL_CONV_CDECL,
-    CALL_CONV_STDCALL,
-    CALL_CONV_THISCALL,
-    CALL_CONV_VECTORCALL
-};
-
-template <typename T, CallingConvention cv = CALL_CONV_CDECL>
-class ForeignFunction {
-public:
-    ForeignFunction() : m_ptr(nullptr) {}
-    ForeignFunction(void *ptr) : m_ptr(ptr) {}
-    ForeignFunction(uintptr_t ptr) { m_ptr = (void*)ptr; }
-
-    template <typename... Ts>
-    T operator()(Ts... args) {
-        if (!m_ptr) throw EXCEPTION_ACCESS_VIOLATION;
-
-        switch (cv) {
-        case CALL_CONV_FASTCALL:
-            return CALL_FN(__fastcall);
-            break;
-
-        case CALL_CONV_CDECL:
-            return CALL_FN(__cdecl);
-            break;
-
-        case CALL_CONV_STDCALL:
-            return CALL_FN(__stdcall);
-            break;
-
-        case CALL_CONV_THISCALL:
-            return CALL_FN(__thiscall);
-            break;
-
-        case CALL_CONV_VECTORCALL:
-            return CALL_FN(__vectorcall);
-            break;
-
-        default:
-            throw EXCEPTION_ACCESS_VIOLATION;
-        }
-    }
-
-    explicit operator bool() const {
-        return !!m_ptr;
-    }
-
-private:
-    void *m_ptr;
-
-};
-
-
-struct RenderState {
-    D3DRENDERSTATETYPE state;
-    DWORD value;
-};
-
-struct GamePointers
+namespace GW2LIB
 {
-    int *pMapId = nullptr;
-    int *pPing = nullptr;
-    int *pFps = nullptr;
-    int *pIfHide = nullptr;
-    int *pMapOpen = nullptr;
-    int *pActionCam = nullptr;
-    void *pAlertCtx = nullptr;
-    void *pCtx = nullptr;
-    void *pAgentViewCtx = nullptr;
-    void *pWorldView = nullptr;
-    void *pWorldViewContext = nullptr;
-    void *pAgentSelectionCtx = nullptr;
-    void *pCompass = nullptr;
-    void *pUiOpts = nullptr;
-    void *pCam = nullptr;
-    void* pMumble = nullptr;
-    sockaddr_in *pIpAddr = nullptr;
-
-    uintptr_t avctxAgentArray = 0;
-};
-
+    // 直接沿用原来结构；用于对外返回 D3D 句柄（此版本不再填充）
+    struct D3D11COMs
+    {
+        void* pSwapChain;
+        void* pDevice;
+        void* pDeviceContext;
+        D3D11COMs() : pSwapChain(NULL), pDevice(NULL), pDeviceContext(NULL) {}
+    };
+}
 
 class Gw2HackMain : public hl::Main
 {
 public:
-    bool init() override;
-    void shutdown() override;
+    Gw2HackMain();
+    virtual ~Gw2HackMain();
 
-    const GamePointers *GetGamePointers() const { return &m_mems; }
-    const GW2LIB::Mems *GetGameOffsets() const { return &m_pubmems; }
+    // hl::Main 接口
+    virtual bool init() override;
+    virtual void destroy() override;
 
-    GW2LIB::D3D11COMs *GetD3D11Coms();
-    const GameData::GameData *GetGameData() const;
-
-    uint64_t GetWindowHandle();
-
-    void SetRenderCallback(void (*cbRender)());
-    void SetGameHookCallback(void(*cbGameHook)());
-    void SetResizeBuffCallback(void(*cbResizeBuff)());
-
-    void RenderHookDx11();
-    void ResizeBuffersDx11();
-    void GameHook();
-    void GameCtxCheck();
-
-    //std::string DecodeText(void* codedTxt);
-    void DecodeText(void* codedTxt, std::string* dst, bool stripColor = false);
-    void StripColorTag(std::string* txt);
-
-    const hl::IHook *m_hkPresent = nullptr;
-    const hl::IHook *m_hkAlertCtx = nullptr;
-    const hl::IHook* m_hkResizeBuff = nullptr;
-
-    size_t debug_tracer_list_idx = 0;
-    const char* debug_tracer_list[DEBUG_TRACER_LIST_MAX] = { 0 };
-    void debug_tracer_list_push(const char* format);
-    void debug_tracer_list_print();
-    std::string debug_tracer_string;
-
-    std::mutex m_gameDataMutex;
-    Gw2GameHook m_gw2Hook;
-    std::unordered_set<std::string*> m_decodedStrings;
-
-    ForeignFunction<void, CALL_CONV_FASTCALL> DecodeGameText; // void __fastcall DecodeText(uint8_t *codedText, resultFunc, uintptr_t ctx)
-    ForeignFunction<void*> GetContext;
-    ForeignFunction<void, CALL_CONV_FASTCALL> SetContext; // void __fastcall SetContext(uintptr_t ctx);
-    ForeignFunction<void, CALL_CONV_FASTCALL> GUID2Str; // void __fastcall GUID2Str(UUID *uuid, uint32_t dst_size, uintptr_t dst);
-    ForeignFunction<void*> GetCharacter; // void *GetCharacter(void *agent);
-    ForeignFunction<void> LockCamera; // void LockCamera(void *wmAgent);
-    ForeignFunction<void, CALL_CONV_THISCALL> LockCamera2; // void __thiscall LockCamera2(pCam+camWmAgent, void *wmAgent);
-    ForeignFunction<void, CALL_CONV_THISCALL> AddDrunkLevel; // void __thiscall AddDrunkLevel(ctxChar, uint32_t lvl);
-    ForeignFunction<void*> GetCodedText; // void* GetCodedText(uint32_t hashId, uint32_t param2);
-    ForeignFunction<void*, CALL_CONV_FASTCALL> GetCodedItemName; // void* __fastcall GetCodedItemName(void* baseItem, void* skinName, void* prefix, void* suffix, uint32_t count, void* unk1, uint32_t unk2)
+    // 外部可能调用的查询
+    HWND GetWindowHandle();
+    GW2LIB::D3D11COMs* GetD3D11Coms();
 
 private:
-    void RefreshDataAgent(GameData::AgentData *pAgentData, hl::ForeignClass agent);
-    void RefreshDataCharacter(GameData::CharacterData *pCharData, hl::ForeignClass character);
-    void RefreshDataPlayer(GameData::PlayerData *pPlayerData, hl::ForeignClass player);
-    void RefreshDataCompass(GameData::CompassData *pCompData, hl::ForeignClass comp);
-    void RefreshDataGadget(GameData::GadgetData *pGadgetData, hl::ForeignClass gd);
-    void RefreshDataAttackTarget(GameData::AttackTargetData *pGadgetTgtData, hl::ForeignClass gd);
-    void RefreshDataResourceNode(GameData::ResourceNodeData *pRNodeData, hl::ForeignClass res);
-    void RefreshDataBuff(GameData::BuffData *pBuffData, hl::ForeignClass buff);
-    void RefreshDataEquipItem(GameData::EquipItemData *pItemData, hl::ForeignClass item);
-    void RefreshDataItem(GameData::ItemData *pItemData, hl::ForeignClass item);
+    // 初始化/释放
+    bool init_internal();
+    void destroy_internal();
 
-    bool SetupCamData();
-    bool SetupAgentArray();
-    bool SetupCharacterArray();
-    bool SetupPlayerArray();
+    // —— 下面是原有成员（去掉了 Overlay 与 Drawer 相关依赖）——
+    std::mutex m_lock;
+    bool m_inited;
 
-    hl::WindowHandle m_hwnd;
+    // 窗口句柄（用 Win32 枚举得到）
+    HWND m_hwnd;
 
-    hl::LogConfig logConfig;
-    hl::ConsoleEx m_con;
-    hl::Hooker m_hooker;
-
+    // 保留 D3D 结构体给外部接口，但不再赋值（全部为 NULL）
     GW2LIB::D3D11COMs m_d3d11coms;
 
-    GameData::GameData m_gameData;
+    // 钩子器等（内存读相关不受影响）
+    hl::Hooker m_hooker;
 
-    bool m_bPublicDrawer = false;
-    void(*m_cbRender)() = nullptr;
-    void(*m_cbGameHook)() = nullptr;
-    void(*m_cbResizeBuff)() = nullptr;
+    // 以下是渲染相关原先的 Present 钩子地址与对象（现不再使用，但保留占位避免连锁改动）
+    uintptr_t m_hkPresentAddr;
+    uintptr_t m_hkResizeAddr;
+    uintptr_t m_hkDX12PresentAddr;
 
-    bool ScanForOffsets();
+    // 其他业务状态位
+    bool m_shouldExit;
+    bool m_consoleVisible;
 
-    GamePointers m_mems;
-    GW2LIB::Mems m_pubmems;
-
+    // 异常处理（原宏会用到）
+    void ExceptHandler(const char* msg, unsigned int code, _EXCEPTION_POINTERS* ep, const char* file, const char* func, int line);
 };
 
-#endif
+extern Gw2HackMain g_Main;
+
+#endif // GW2HACK_MAIN_H
