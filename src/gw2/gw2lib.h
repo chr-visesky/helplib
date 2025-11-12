@@ -9,7 +9,10 @@ http://www.gamerevision.com/showthread.php?3691-Gw2lib&p=45709
 #ifndef GW2LIB_H
 #define GW2LIB_H
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <Windows.h>
+#include <rpc.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -18,10 +21,6 @@ http://www.gamerevision.com/showthread.php?3691-Gw2lib&p=45709
 
 #include "enums.h"
 #include "Gw2Hook.h"
-#include "hacklib/D3DDeviceFetcher.h"
-
-
-struct PrimitiveDiffuseMesh;
 namespace GameData {
     class PlayerData;
     class CharacterData;
@@ -56,15 +55,9 @@ namespace GW2LIB
     class EquipItem;
     class Frame;
 
-    class Vector2 {
-    public:
-        Vector2() { }
-        Vector2(float x, float y) : x(x), y(y) { }
-        float x, y;
-    };
     class Vector3 {
     public:
-        Vector3() { }
+        Vector3() : x(0.0f), y(0.0f), z(0.0f) { }
         Vector3(float x, float y, float z) : x(x), y(y), z(z) { }
         bool operator== (const Vector3 &vec){ return vec.x == x && vec.y == y && vec.z == z; }
         bool operator!= (const Vector3 &vec){ return vec.x != x || vec.y != y || vec.z != z; }
@@ -72,7 +65,7 @@ namespace GW2LIB
     };
     class Vector4 {
     public:
-        Vector4() { }
+        Vector4() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) { }
         Vector4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) { }
         float x, y, z, w;
     };
@@ -97,26 +90,16 @@ namespace GW2LIB
         };
     }
 
-    typedef hl::D3DDeviceFetcher::D3D11COMs D3D11COMs;
-
     //////////////////////////////////////////////////////////////////////////
     // # general functions
     //////////////////////////////////////////////////////////////////////////
 
-    // registers a callback to be used for a custom esp
-    // use draw functions inside the callback function
-    void EnableEsp(void (*)());
-
     // registers a callback to be used for "ViewAdvanceDevice" (aka, game hook)
     void EnableGameHook(void (*)());
-    void EnableResizeBuffHook(void(*)());
 
     void GameCtxCheck();
 
     float Dist3D(Vector3, Vector3);
-
-    uint64_t GetWindowHandle();
-    Vector2 GetWindowSize();
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -440,7 +423,6 @@ namespace GW2LIB
     bool IsInCutscene();
     bool ActionCamOn();
     std::string GetIPAddress();
-    D3D11COMs GetD3D11Coms();
     void AddDrunkLevel(int lvl);
     uint32_t GetBuildId();
 
@@ -455,79 +437,6 @@ namespace GW2LIB
     float GetCamMaxZoom();
     void SetCamMinZoom(float);
     void SetCamMaxZoom(float);
-
-    //////////////////////////////////////////////////////////////////////////
-    // # draw functions
-    //////////////////////////////////////////////////////////////////////////
-    // all "draw" functions are only usable in callback function defined with "EnableEsp"
-
-    void DrawLine(float x, float y, float x2, float y2, DWORD color);
-    void DrawLineProjected(Vector3 pos1, Vector3 pos2, DWORD color);
-    void DrawRect(float x, float y, float w, float h, DWORD color);
-    void DrawRectFilled(float x, float y, float w, float h, DWORD color);
-    void DrawCircle(float mx, float my, float r, DWORD color);
-    void DrawCircleFilled(float mx, float my, float r, DWORD color);
-
-    // circles are drawn parallel to xy-plane
-    void DrawCircleProjected(Vector3 pos, float r, DWORD color);
-    void DrawCircleFilledProjected(Vector3 pos, float r, DWORD color);
-
-    void DrawRectProjected(Vector3 pos, float x, float y, float rot, DWORD color);
-    void DrawRectFilledProjected(Vector3 pos, float x, float y, float rot, DWORD color);
-
-
-    // returns false when projected position is not on screen
-    bool WorldToScreen(Vector3 in, float *outX, float *outY);
-
-    float GetWindowWidth();
-    float GetWindowHeight();
-
-    //////////////////////////////////////////////////////////////////////////
-    // # complex drawing classes
-    //////////////////////////////////////////////////////////////////////////
-
-    class Texture {
-    public:
-        Texture();
-        bool Init(std::string file);
-        bool Init(const void *buffer, size_t size);
-        void Draw(float x, float y, float w, float h) const;
-    private:
-        Texture(const Texture &t) { }
-        Texture &operator= (const Texture &t) { }
-        const void *m_ptr;
-    };
-
-    class Font {
-    public:
-        Font();
-        bool Init(int size, std::string name, bool bold = true);
-        void Draw(float x, float y, DWORD color, std::string format, va_list vl) const;
-        void Draw(float x, float y, DWORD color, std::string format, ...) const;
-        Vector2 TextInfo(std::string str) const;
-    private:
-        Font(const Font &f) { }
-        Font &operator= (const Font &f) { }
-        const void *m_ptr;
-    };
-
-    // limitation of this: completly ignores depth checks
-    // what is drawn last, is on front
-    class PrimitiveDiffuse {
-    public:
-        PrimitiveDiffuse();
-        ~PrimitiveDiffuse();
-        // if indices is empty, primitive is not drawn indexed
-        bool Init(std::vector<std::pair<Vector3,DWORD>> vertices, std::vector<unsigned int> indices, bool triangleStrip);
-        void SetTransforms(std::vector<Matrix4x4> transforms);
-        void AddTransform(Matrix4x4 transform);
-        void Draw() const;
-    private:
-        PrimitiveDiffuse(const PrimitiveDiffuse &p) { }
-        PrimitiveDiffuse &operator= (const PrimitiveDiffuse &p) { }
-        PrimitiveDiffuseMesh *m_ptr;
-    };
-
 
     //////////////////////////////////////////////////////////////////////////
     // # advanced

@@ -16,7 +16,7 @@
         int _00[4];
         int id;
         int _14[2];
-        D3DXVECTOR3 pos;
+        struct Vec3 { float x; float y; float z; } pos;
         float hp;
     };
 
@@ -27,7 +27,7 @@
         IMPLVTFUNC(double, func, 0x8, int, id, double, speed);
         IMPLVTFUNC_OR(void, boop, 3);
         IMPLMEMBER(int, Id, 0x10);
-        IMPLMEMBER_REL(D3DXVECTOR3, Pos, 0x8, Id);
+        IMPLMEMBER_REL(Vec3, Pos, 0x8, Id);
         IMPLMEMBER_REL(float, Hp, 0, Pos);
     };
 
@@ -40,8 +40,8 @@
         void boop();
         int getId() const;
         void setId(int value);
-        D3DXVECTOR3 getPos() const;
-        void setPos(D3DXVECTOR3 value);
+        Vec3 getPos() const;
+        void setPos(Vec3 value);
         float getHp() const;
         void setHp(float value);
     }

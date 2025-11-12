@@ -76,7 +76,7 @@ namespace GW2LIB {
         uintptr_t agentId = 0xc; // os
         // AgentType GetType();
         uintptr_t agentType = 0x8; // os
-        // void GetPos(D3DXVECTOR3* pPos);
+        // void GetPos(Vector3* pPos);
         uintptr_t agentVtGetPos = 0x158; // os
         uintptr_t agentVtGetRot = 0x1A0; // os
         uintptr_t gd_agentVtGetToken = 0x280; // os - L"Content is referencing a propID"
@@ -333,7 +333,7 @@ namespace GW2LIB {
         uintptr_t asctxHover = 0x130; // os
         // Agent::CAgentBase* m_lockedSelection;
         uintptr_t asctxLocked = 0x298; // os
-        // D3DXVECTOR3 m_screenToWorld;
+        // Vector3 m_screenToWorld;
         uintptr_t asctxStoW = 0x300; // os
         uintptr_t asctxCtxMode = 0x90; // os - enum
         uintptr_t asctxVtAgCanSel = 0x8;
@@ -349,7 +349,7 @@ namespace GW2LIB {
         */
 
         // WorldView::CContext
-        // void GetMetrics(int one, D3DXVECTOR3* camPos, D3DXVECTOR3* lookAt, D3DXVECTOR3* upVec float* fov);
+        // void GetMetrics(int one, Vector3* camPos, Vector3* lookAt, Vector3* upVec, float* fov);
         uintptr_t wvctxVtGetMetrics = 0x88;
         // int m_camStatus;
         uintptr_t wvctxStatus = 0x58;

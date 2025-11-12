@@ -26,6 +26,8 @@ struct Page
     uintptr_t m_begin;
     uintptr_t m_end;
     int m_refs;
+};
+
 class VEHHookManager
 {
 public:

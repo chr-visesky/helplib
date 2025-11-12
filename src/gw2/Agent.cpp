@@ -132,10 +132,9 @@ Vector3 Agent::GetPos() const
     Vector3 pos = { 0, 0, 0 };
     if (m_ptr)
     {
-        D3DXVECTOR3 dxPos = m_ptr->pos;
-        pos.x = dxPos.x;
-        pos.y = dxPos.y;
-        pos.z = dxPos.z;
+        pos.x = m_ptr->pos.x;
+        pos.y = m_ptr->pos.y;
+        pos.z = m_ptr->pos.z;
     }
     return pos;
 }

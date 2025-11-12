@@ -4,7 +4,6 @@
 #include "gw2lib.h"
 
 #include "hacklib/ForeignClass.h"
-#include "hacklib/IDrawer.h"
 
 #include <string>
 #include <vector>
@@ -171,7 +170,7 @@ namespace GameData
         GW2LIB::GW2::AgentCategory category = GW2LIB::GW2::AGENT_CATEGORY_CHAR;
         GW2LIB::GW2::AgentType type = GW2LIB::GW2::AGENT_TYPE_CHAR;
         uint32_t agentId = 0;
-        hl::Vec3 pos = hl::Vec3(0.0f);
+        GW2LIB::Vector3 pos = GW2LIB::Vector3();
         float rot = 0;
         uint64_t token = 0;
         uint64_t seq = 0;
@@ -179,7 +178,7 @@ namespace GameData
         float speed = 0;
         float maxSpeed = 0;
         float calcSpeed = 0;
-        GW2LIB::Vector3 prevCalcSpeedPos = GW2LIB::Vector3(0,0,0);
+        GW2LIB::Vector3 prevCalcSpeedPos = GW2LIB::Vector3();
         bool selectable = false;
 
         void UpdateData() {}
@@ -423,15 +422,15 @@ namespace GameData
         struct _camData
         {
             bool valid = false;
-            hl::Vec3 camPos = hl::Vec3(0.0f);
-            hl::Vec3 viewVec = hl::Vec3(0.0f);
+            GW2LIB::Vector3 camPos = GW2LIB::Vector3();
+            GW2LIB::Vector3 viewVec = GW2LIB::Vector3();
             float fovy = 0;
             float currZoom = 0;
             float minZoom = 0;
             float maxZoom = 0;
         } camData;
 
-        hl::Vec3 mouseInWorld = hl::Vec3(0.0f);
+        GW2LIB::Vector3 mouseInWorld = GW2LIB::Vector3();
         int mapId = 0;
         int ping = 0;
         int fps = 0;

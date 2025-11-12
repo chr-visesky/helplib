@@ -1,3 +1,5 @@
+#include <process.h>
+extern "C" uintptr_t __cdecl _beginthreadex(void*, unsigned, unsigned(__stdcall*)(void*), void*, unsigned, unsigned*);
 #include "hacklib/ConsoleEx.h"
 #include "commctrl.h"
 

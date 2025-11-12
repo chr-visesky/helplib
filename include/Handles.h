@@ -3,7 +3,6 @@
 
 #ifdef _WIN32
 #include <Windows.h>
-#include <d3d9.h>
 #endif
 
 
@@ -15,9 +14,6 @@ namespace hl
 using ModuleHandle = HINSTANCE;
 /// Represents a window handle.
 using WindowHandle = HWND;
-/// Represents a graphics context.
-using GraphicsContext = IDirect3DDevice9*;
-
 /// Represents a null value for hl::ModuleHandle.
 static const ModuleHandle NullModuleHandle = NULL;
 
@@ -27,9 +23,6 @@ static const ModuleHandle NullModuleHandle = NULL;
 using ModuleHandle = void*;
 /// Represents a window handle. Must be compatible with X11 Window type.
 using WindowHandle = long unsigned int;
-/// Represent a graphics context.
-using GraphicsContext = void*;
-
 /// Represents a null value for hl::ModuleHandle.
 static const ModuleHandle NullModuleHandle = nullptr;
 

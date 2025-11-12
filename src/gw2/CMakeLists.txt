@@ -19,6 +19,7 @@ if (WIN32)
     Player.cpp
     RefreshData.cpp
     ResourceNode.cpp
+    stub.cpp
     main.cpp
   )
 
@@ -27,7 +28,7 @@ if (WIN32)
     ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-  target_link_libraries(helplib_gw2 PRIVATE helplib)
+  target_link_libraries(helplib_gw2 PRIVATE helplib ws2_32 comctl32)
 else()
   add_library(helplib_gw2 SHARED
     stub.cpp

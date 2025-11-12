@@ -1,3 +1,7 @@
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
+
 #include "hacklib/Injector.h"
 #include <Windows.h>
 #include <TlHelp32.h>
@@ -34,7 +38,7 @@ public:
     {
         LPCSTR path = file.data();
 
-        DWORD written = GetFullPathName(path, MAX_PATH, m_fileName, NULL);
+        DWORD written = GetFullPathNameA(path, MAX_PATH, m_fileName, NULL);
         if (written == 0)
         {
             writeErr("Fatal: Could not get the full library file name\n");
@@ -43,8 +47,8 @@ public:
 
         m_fileNameSize = (written + 1) * sizeof(CHAR);
 
-        WIN32_FIND_DATA info;
-        HANDLE hFile = FindFirstFile(m_fileName, &info);
+        WIN32_FIND_DATAA info;
+        HANDLE hFile = FindFirstFileA(m_fileName, &info);
         if (hFile == INVALID_HANDLE_VALUE)
         {
             writeErr("Fatal: Could not find the library file\n");
@@ -53,7 +57,7 @@ public:
 
         FindClose(hFile);
 
-        written = GetCurrentDirectory(MAX_PATH, m_currentDir);
+        written = GetCurrentDirectoryA(MAX_PATH, m_currentDir);
         if (written == 0)
         {
             writeErr("Fatal: Could not get the current directory\n");
@@ -66,7 +70,7 @@ public:
     }
     bool findApi()
     {
-        HMODULE hMod = GetModuleHandle("kernel32");
+        HMODULE hMod = GetModuleHandleA("kernel32");
         if (hMod == NULL)
         {
             writeErr("Fatal: Could not get kernel32 module handle\n");
@@ -138,7 +142,7 @@ public:
             for (int i = 0; i < numModules; i++)
             {
                 CHAR moduleName[MAX_PATH + 1];
-                DWORD written = GetModuleFileNameEx(m_hProc, hModules[i], moduleName, MAX_PATH);
+                DWORD written = GetModuleFileNameExA(m_hProc, hModules[i], moduleName, MAX_PATH);
                 if (written == 0)
                 {
                     writeErr("Warning: Could not get the full file name of a module\n");
@@ -245,6 +249,27 @@ bool hl::Inject(int pid, const std::string& libFileName, std::string* error)
            inj.runRemoteThreads();
 }
 
+namespace
+{
+std::string NarrowProcessName(const TCHAR* exe)
+{
+#ifdef UNICODE
+    if (!exe)
+        return {};
+    int required = WideCharToMultiByte(CP_UTF8, 0, exe, -1, nullptr, 0, nullptr, nullptr);
+    if (required <= 0)
+        return {};
+    std::string result(static_cast<size_t>(required - 1), '\0');
+    if (required > 1) {
+        WideCharToMultiByte(CP_UTF8, 0, exe, -1, result.data(), required, nullptr, nullptr);
+    }
+    return result;
+#else
+    return exe ? std::string(exe) : std::string();
+#endif
+}
+}
+
 std::vector<int> hl::GetPIDsByProcName(const std::string& pname)
 {
     std::vector<int> result;
@@ -260,7 +285,7 @@ std::vector<int> hl::GetPIDsByProcName(const std::string& pname)
     {
         do
         {
-            if (pname == entry.szExeFile)
+            if (pname == NarrowProcessName(entry.szExeFile))
             {
                 result.push_back(entry.th32ProcessID);
             }

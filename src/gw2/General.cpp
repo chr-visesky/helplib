@@ -58,27 +58,6 @@ float GW2LIB::Dist3D(GW2LIB::Vector3 p1, GW2LIB::Vector3 p2) {
     return (float)sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2) + pow(p1.z - p2.z, 2));
 }
 
-uint64_t GW2LIB::GetWindowHandle() {
-    return GetMain()->GetWindowHandle();
-}
-
-GW2LIB::Vector2 GW2LIB::GetWindowSize() {
-    RECT r;
-    HWND h = (HWND)GW2LIB::GetWindowHandle();
-
-    GetClientRect(h, &r);
-
-    Vector2 ret;
-    ret.x = (float)r.right;
-    ret.y = (float)r.bottom;
-
-    return ret;
-}
-
-void GW2LIB::EnableEsp(void (*cbRender)()) {
-    GetMain()->SetRenderCallback(cbRender);
-}
-
 GW2LIB::GW2::UiIntefaceSize GW2LIB::GetUiInterfaceSize() {
     return GetMain()->GetGameData()->uiIntSize;
 }
@@ -142,10 +121,6 @@ std::string GW2LIB::GetIPAddress() {
 }
 
 
-GW2LIB::D3D11COMs GW2LIB::GetD3D11Coms() {
-    return *GetMain()->GetD3D11Coms();
-}
-
 void GW2LIB::AddDrunkLevel(int lvl) {
     auto pmems = GetMain()->GetGameOffsets();
     auto mems  = GetMain()->GetGamePointers();
@@ -164,10 +139,6 @@ uint32_t GW2LIB::GetBuildId() {
 
 void GW2LIB::EnableGameHook(void(*cbGameHook)()) {
     GetMain()->SetGameHookCallback(cbGameHook);
-}
-
-void GW2LIB::EnableResizeBuffHook(void(*cbResizeBuff)()) {
-    GetMain()->SetResizeBuffCallback(cbResizeBuff);
 }
 
 void GW2LIB::GameCtxCheck() {

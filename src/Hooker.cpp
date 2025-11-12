@@ -5,6 +5,13 @@
 #include <mutex>
 #include <unordered_map>
 
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 
 #ifdef ARCH_64BIT
 static const int JMPHOOKSIZE = 14;
