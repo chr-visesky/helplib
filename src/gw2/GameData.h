@@ -1,0 +1,458 @@
+#ifndef GAMEDATA_H
+#define GAMEDATA_H
+
+#include "gw2lib.h"
+
+#include "hacklib/ForeignClass.h"
+#include "hacklib/IDrawer.h"
+
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <memory>
+
+
+namespace GameData
+{
+    class PlayerData;
+    class CharacterData;
+    class AgentData;
+    class GadgetData;
+    class AttackTargetData;
+    class ResourceNodeData;
+    class CompassData;
+    class ItemData;
+    class EquipItemData;
+    class BuffData;
+    struct BuffEntry;
+
+    enum CompassFlags {
+        COMP_ROTATION = 0x1,
+        COMP_POSITION = 0x4,
+        COMP_MOUSE_OVER = 0x8
+    };
+
+    enum ResourceNodeFlags {
+        RNODE_FLAG_DEPLETED = 0x2
+    };
+
+    enum CharacterFlags {
+        CHAR_FLAG_IN_COMBAT = 0x20,
+        CHAR_FLAG_WEAP_DRAWN = 0x40
+    };
+
+    // selected agent health bar and portriat flags
+    enum AgentStatusFlag {
+        AS_FLAG_CHAMPION = 1 << 1,
+        AS_FLAG_UNSELECTABLE = 1 << 3,
+        AS_FLAG_ELITE = 1 << 5,
+        AS_FLAG_LVL_HIDDEN = 1 << 9,
+        AS_FLAG_LEGENDARY = 1 << 11,
+        AS_FLAG_VETERAN = 1 << 29,
+        AS_FLAG_AMBIENT = 1 << 31
+    };
+
+    namespace ANet
+    {
+        template <typename T>
+        struct Array {
+            T *m_basePtr;
+            uint32_t m_capacity;
+            uint32_t m_count;
+        };
+
+        template <typename T>
+        struct Dictionary {
+            uint32_t m_capacity;
+            uint32_t m_count;
+            T *m_basePtr;
+        };
+
+        template <typename T, bool IsArray = true>
+        class Collection : private std::conditional<IsArray, Array<T>, Dictionary<T>>::type {
+        public:
+            Collection(uintptr_t ptr) {
+                auto a = *(const Collection<T>*)ptr;
+                AssignValues(a);
+            }
+            Collection<T> &operator= (const Collection<T> &a) {
+                if (this != &a) {
+                    AssignValues(a);
+                }
+                return *this;
+            }
+            void AssignValues(const Collection<T> &a) {
+                m_basePtr = a.m_basePtr;
+                m_capacity = a.m_capacity;
+                m_count = a.m_count;
+            }
+            T &operator[] (uint32_t index) {
+                if (IsArray && index < Count()) {
+                    return m_basePtr[index];
+                } else if (index < Capacity()) {
+                    return m_basePtr[index];
+                }
+                throw STATUS_ARRAY_BOUNDS_EXCEEDED;
+            }
+            bool IsValid() {
+                return !!m_basePtr;
+            }
+            uint32_t Count() {
+                return m_count;
+            }
+            uint32_t Capacity() {
+                return m_capacity;
+            }
+        };
+    };
+
+
+
+
+    template<typename T, typename Tc, bool IsArray = true>
+    class ObjectList {
+    public:
+        virtual bool Update() = 0;
+        //virtual T* Find(void* idx);
+
+    protected:
+        std::unordered_map<void*, std::unique_ptr<T>> objectDataList;
+        //ANet::Collection<Tc, IsArray> gameArr;
+    };
+
+    class AgentList : public ObjectList<AgentData, void*> {
+    public:
+        bool Update();
+    };
+
+    class CharacterList : public ObjectList<CharacterData, void*> {
+    public:
+        bool Update();
+    };
+
+    class PlayerList : public ObjectList<PlayerData, void*> {
+    public:
+        bool Update();
+    };
+
+    class BuffList : public ObjectList<BuffData, BuffEntry, false> {
+    public:
+        bool Update();
+    };
+
+
+
+
+    class ObjectData {
+    public:
+        std::string name = "";
+        bool nameResolved = false;
+
+        ObjectData();
+        ~ObjectData();
+
+        virtual void UpdateData() = 0;
+        virtual void ResetData() = 0;
+    protected:
+        hl::ForeignClass m_ptr = nullptr;
+    };
+
+
+
+    class AgentData : public ObjectData {
+    public:
+        hl::ForeignClass pAgent = nullptr;
+        hl::ForeignClass wmAgent = nullptr;
+        CharacterData *pCharData = nullptr;
+        PlayerData *pPlayerData = nullptr;
+        std::unique_ptr<GadgetData> gadgetData = nullptr;
+        std::unique_ptr<AttackTargetData> attackTgtData = nullptr;
+        GW2LIB::GW2::AgentCategory category = GW2LIB::GW2::AGENT_CATEGORY_CHAR;
+        GW2LIB::GW2::AgentType type = GW2LIB::GW2::AGENT_TYPE_CHAR;
+        uint32_t agentId = 0;
+        hl::Vec3 pos = hl::Vec3(0.0f);
+        float rot = 0;
+        uint64_t token = 0;
+        uint64_t seq = 0;
+        float realSpeed = 0;
+        float speed = 0;
+        float maxSpeed = 0;
+        float calcSpeed = 0;
+        GW2LIB::Vector3 prevCalcSpeedPos = GW2LIB::Vector3(0,0,0);
+        bool selectable = false;
+
+        void UpdateData() {}
+        void ResetData() {
+            nameResolved = false;
+        }
+    };
+
+    class CharacterData : public ObjectData {
+    public:
+        hl::ForeignClass pCharacter = nullptr;
+        hl::ForeignClass pPlayer = nullptr;
+        hl::ForeignClass pCombatant = nullptr;
+        hl::ForeignClass pBuffBar = nullptr;
+        hl::ForeignClass pInventory = nullptr;
+        hl::ForeignClass pSkillbar = nullptr;
+        AgentData *pAgentData = nullptr;
+        uint16_t id = 0;
+        bool isAlive = false;
+        bool isDowned = false;
+        bool isControlled = false;
+        bool isPlayer = false;
+        bool isInWater = false;
+        bool isMonster = false;
+        bool isClone = false;
+        bool isRangerPet = false;
+        bool isInCombat = false;
+        bool isWeapDrawn = false;
+        int level = 0;
+        int scaledLevel = 0;
+        int wvwsupply = 0;
+        float currentEnergy = 0;
+        float maxEnergy = 0;
+        float currentHealth = 0;
+        float maxHealth = 0;
+        float currBarrier = 0;
+        float currentEndurance = 0;
+        float maxEndurance = 0;
+        float gliderPercent = 0;
+        float breakbarPercent = 0;
+        uint32_t asFlags = 0;
+        GW2LIB::GW2::BreakbarState breakbarState = GW2LIB::GW2::BREAKBAR_STATE_NONE;
+        GW2LIB::GW2::Profession profession = GW2LIB::GW2::PROFESSION_NONE;
+        GW2LIB::GW2::ProfessionStance stance = GW2LIB::GW2::STANCE_NONE;
+        GW2LIB::GW2::Attitude attitude = GW2LIB::GW2::ATTITUDE_FRIENDLY;
+        GW2LIB::GW2::CharacterGender gender = GW2LIB::GW2::CHAR_GENDER_NONE;
+        GW2LIB::GW2::Race race = GW2LIB::GW2::RACE_NONE;
+        GW2LIB::GW2::CharacterStats stats;
+
+        std::unordered_map<size_t, std::unique_ptr<BuffData>> buffDataList;
+        std::unordered_map<GW2LIB::GW2::EffectType, int64_t> buffTimeList;
+        std::unordered_map<size_t, std::unique_ptr<EquipItemData>> equipItemDataList;
+
+        BuffList buffList;
+
+        void UpdateData() {}
+        void ResetData() {}
+
+        int GetBuffStackCount(GW2LIB::GW2::EffectType);
+        void AddBuff(BuffData*);
+        void RemoveBuff(BuffData*);
+    };
+
+    class PlayerData : public ObjectData {
+    public:
+        hl::ForeignClass pPlayer = nullptr;
+        hl::ForeignClass pChar = nullptr;
+        hl::ForeignClass pWallet = nullptr;
+        hl::ForeignClass pTrainMgr = nullptr;
+        hl::ForeignClass pAchMgr = nullptr;
+        hl::ForeignClass pSpecMgr = nullptr;
+        AgentData *pAgentData = nullptr;
+        CharacterData *pCharData = nullptr;
+
+        GW2LIB::GW2::Specialization specs[GW2LIB::GW2::SPEC_SLOT_END] = { GW2LIB::GW2::SPEC_NONE };
+        GW2LIB::GW2::Trait traits[GW2LIB::GW2::SPEC_SLOT_END][GW2LIB::GW2::TRAIT_SLOT_END] = { GW2LIB::GW2::TRAIT_NONE };
+
+        int masteryLvl = 0;
+        int ap = 0;
+        UUID uuid = { 0 };
+
+        void UpdateData() {}
+        void ResetData() {}
+    };
+
+    class GadgetData : public ObjectData {
+    public:
+        hl::ForeignClass pGadget = nullptr;
+        AgentData *pAgentData = nullptr;
+        std::unique_ptr<ResourceNodeData> rNodeData = nullptr;
+
+        float currentHealth = 0;
+        float maxHealth = 0;
+        int wvwTeamId = 0;
+        GW2LIB::GW2::GadgetType type = GW2LIB::GW2::GADGET_TYPE_NONE;
+
+        void UpdateData() {}
+        void ResetData() {}
+    };
+
+    class AttackTargetData : public ObjectData {
+    public:
+        hl::ForeignClass pAttackTgt = nullptr;
+        AgentData *pAgentData = nullptr;
+
+        float currentHealth = 0;
+        float maxHealth = 0;
+
+        void UpdateData() {}
+        void ResetData() {}
+    };
+
+    class ResourceNodeData : public ObjectData {
+    public:
+        hl::ForeignClass pResourceNode = nullptr;
+        AgentData *pAgentData = nullptr;
+        GW2LIB::GW2::ResourceNodeType type = GW2LIB::GW2::RNODE_TYPE_NONE;
+        struct {
+            unsigned int : 6;
+            bool depleted : 1;
+            bool : 1;
+        } flags;
+
+        void UpdateData() {}
+        void ResetData() {}
+    };
+
+    class CompassData : public ObjectData {
+    public:
+        hl::ForeignClass pComp = nullptr;
+        float width = 0;
+        float height = 0;
+        float maxWidth = 0;
+        float maxHeight = 0;
+        int zoom = 0;
+        struct {
+            unsigned int : 28; // unknown
+            bool mouseOver : 1; // true when hovering mouse over minimap
+            bool position : 1; // position of compass on screen (top = 1/bottom = 0)
+            bool : 1; // unknown (possibly bottom position width snap to skillbar)
+            bool rotation : 1; // rotation lock (true if map rotation is enabled)
+        } flags;
+
+        // from mumble data
+        float absCharLeft = 0;
+        float absCharTop = 0;
+        float absMapLeft = 0;
+        float absMapTop = 0;
+        float mapScale = 0;
+
+        void UpdateData() {}
+        void ResetData() {}
+    };
+
+    class ItemData : public ObjectData {
+    public:
+        hl::ForeignClass pItemDef = nullptr;
+        uintptr_t* prefixName = nullptr;
+        uintptr_t* suffixName = nullptr;
+        uintptr_t* skinName = nullptr;
+        GW2LIB::GW2::ItemRarity rarity = GW2LIB::GW2::RARITY_NONE;
+        uint32_t id = 0;
+        uint32_t type = 0;
+        uint32_t reqLvl = 0;
+        uint32_t sellValue = 0;
+
+        void UpdateData() {}
+        void ResetData() {
+            name = "";
+            id = 0;
+            type = 0;
+            nameResolved = false;
+            pItemDef = nullptr;
+            prefixName = nullptr;
+            suffixName = nullptr;
+            skinName = nullptr;
+            rarity = GW2LIB::GW2::RARITY_NONE;
+        }
+    };
+
+    class EquipItemData : public ObjectData {
+    public:
+        hl::ForeignClass pEItem = nullptr;
+        CharacterData *pCharData = nullptr;
+        GW2LIB::GW2::EquipmentSlot equipSlot = GW2LIB::GW2::EQUIP_SLOT_NONE;
+        ItemData itemDef;
+
+        void UpdateData() {}
+        void ResetData() {
+            pCharData = nullptr;
+            equipSlot = GW2LIB::GW2::EQUIP_SLOT_NONE;
+            itemDef.ResetData();
+        }
+    };
+
+    class BuffData : public ObjectData {
+    public:
+        hl::ForeignClass pBuff = nullptr;
+        CharacterData *pCharData = nullptr;
+        AgentData *pSrcAgData = nullptr;
+        GW2LIB::GW2::EffectType effectType = GW2LIB::GW2::EFFECT_NONE;
+        GW2LIB::GW2::BuffStackType stackType = GW2LIB::GW2::BUFF_STACK_TYPE_END;
+        uint32_t id = 0;
+        int32_t duration = 0;
+        int64_t applyTime = 0;
+
+        void UpdateData() {}
+        void ResetData() {}
+    };
+
+    struct BuffEntry {
+        size_t buffId;
+        uintptr_t *pBuff;
+        size_t hash;
+    };
+
+    struct GameData
+    {
+        struct _objData
+        {
+            std::vector<std::unique_ptr<AgentData>> agentDataList;
+            std::vector<std::unique_ptr<CharacterData>> charDataList;
+            std::vector<std::unique_ptr<PlayerData>> playerDataList;
+            std::unique_ptr<CompassData> compData = nullptr;
+            CharacterData *ownCharacter = nullptr;
+            AgentData *ownAgent = nullptr;
+            AgentData *autoSelection = nullptr;
+            AgentData *hoverSelection = nullptr;
+            AgentData *lockedSelection = nullptr;
+
+            uintptr_t memCatList = 0;
+            size_t *memCatSize = nullptr;
+
+            uintptr_t frameListPtr = 0;
+
+            AgentList agentList;
+            CharacterList charList;
+            PlayerList playerList;
+        } objData;
+
+        struct _camData
+        {
+            bool valid = false;
+            hl::Vec3 camPos = hl::Vec3(0.0f);
+            hl::Vec3 viewVec = hl::Vec3(0.0f);
+            float fovy = 0;
+            float currZoom = 0;
+            float minZoom = 0;
+            float maxZoom = 0;
+        } camData;
+
+        hl::Vec3 mouseInWorld = hl::Vec3(0.0f);
+        int mapId = 0;
+        int ping = 0;
+        int fps = 0;
+        int ifHide = 0;
+        int mapOpen = 0;
+        int asCtxMode = 0;
+        int actionCam = 0;
+        uint32_t buildId = 0;
+        uint32_t uiFlags1 = 0;
+        uint32_t uiFlags2 = 0;
+        uint32_t uiFlags3 = 0;
+        uint32_t uiFlags4 = 0;
+        uint32_t uiFlags5 = 0;
+        sockaddr_in ipAddr = { 0 };
+        GW2LIB::GW2::UiIntefaceSize uiIntSize = GW2LIB::GW2::UI_IF_NORMAL;
+    };
+
+    AgentData *GetAgentData(hl::ForeignClass pAgent);
+    AgentData *GetAgentDataById(uint32_t agentId);
+    CharacterData *GetCharData(hl::ForeignClass pChar);
+    PlayerData *GetPlayerData(hl::ForeignClass pPlayer);
+};
+
+#endif
