@@ -1,42 +1,36 @@
-PROJECT(hacklib_gw2)
+# 只保留“注入 + 内存读取 + 扫描 + 逻辑包装”，移除 SampleApp.cpp
+add_library(helplib_gw2 SHARED
+  Agent.cpp
+  AttackTarget.cpp
+  Buff.cpp
+  Camera.cpp
+  Character.cpp
+  Compass.cpp
+  DataScan.cpp
+  EquipItem.cpp
+  Frame.cpp
+  Gadget.cpp
+  GameData.cpp
+  General.cpp
+  Gw2Hook.cpp
+  Item.cpp
+  Memory.cpp
+  Player.cpp
+  RefreshData.cpp
+  ResourceNode.cpp
+  main.cpp
+)
 
-ADD_LIBRARY(${PROJECT_NAME} STATIC
-    gw2lib.h
-    enums.h
-    General.cpp
-    Camera.cpp
-    Agent.cpp
-    Character.cpp
-    Player.cpp
-    EspDraw.cpp
-    Gadget.cpp
-    AttackTarget.cpp
-    Compass.cpp
-    Memory.cpp
-    Buff.cpp
-    DataScan.cpp
-    offsets.h
-    GameData.h
-    GameData.cpp
-    Gw2Hook.h
-    Gw2Hook.cpp
-    ResourceNode.cpp
-    Item.cpp
-    EquipItem.cpp
-    RefreshData.cpp
-    main.h
-    main.cpp
-    )
+target_include_directories(helplib_gw2 PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
+target_link_libraries(helplib_gw2 PRIVATE helplib)
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} hacklib ws2_32)
-
-TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC .)
-
-
-ADD_LIBRARY(${PROJECT_NAME}_sample SHARED SampleApp.cpp)
-
-SET_TARGET_PROPERTIES(${PROJECT_NAME}_sample PROPERTIES FOLDER ${PROJECT_NAME}_sample)
-
-TARGET_LINK_LIBRARIES(${PROJECT_NAME}_sample ${PROJECT_NAME})
+set_target_properties(helplib_gw2 PROPERTIES
+  OUTPUT_NAME "helplib_gw2"
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+)
