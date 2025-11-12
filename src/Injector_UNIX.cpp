@@ -143,21 +143,21 @@ public:
 
         auto findLib = [&](const std::string& libName)
         {
-            return std::ranges::find_if(memoryMap,
-                                        [&](const hl::MemoryRegion& r)
-                                        {
-                                            auto pos = r.name.find(libName);
-                                            if (pos != std::string::npos)
-                                            {
-                                                pos += libName.size();
-                                                return r.name[pos] == '.' || r.name[pos] == '-';
-                                            }
-                                            return false;
-                                        });
+            return std::find_if(memoryMap.begin(), memoryMap.end(),
+                                [&](const hl::MemoryRegion& r)
+                                {
+                                    auto pos = r.name.find(libName);
+                                    if (pos != std::string::npos)
+                                    {
+                                        pos += libName.size();
+                                        return r.name[pos] == '.' || r.name[pos] == '-';
+                                    }
+                                    return false;
+                                });
         };
 
         auto itCheck =
-            std::ranges::find_if(memoryMap, [this](const hl::MemoryRegion& r) { return r.name == m_fileName; });
+            std::find_if(memoryMap.begin(), memoryMap.end(), [this](const hl::MemoryRegion& r) { return r.name == m_fileName; });
         if (itCheck != memoryMap.end())
         {
             writeErr("Fatal: The specified module is already loaded\n");

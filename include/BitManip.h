@@ -2,6 +2,7 @@
 #define HACKLIB_BITMANIP_H
 
 #include <cstdint>
+#include <type_traits>
 
 
 namespace hl
@@ -15,11 +16,12 @@ T Align(T v, T align)
 }
 
 // Convenience overload for pointer types.
-template <typename T, typename U>
-    requires std::is_pointer_v<T>
+template <typename T, typename U, typename = std::enable_if_t<std::is_pointer_v<T>>>
 T Align(T v, U align)
 {
-    return (T)(((uintptr_t)v + (uintptr_t)align - 1) & ~((uintptr_t)align - 1));
+    auto value = reinterpret_cast<uintptr_t>(v);
+    auto alignment = static_cast<uintptr_t>(align);
+    return reinterpret_cast<T>((value + alignment - 1) & ~(alignment - 1));
 }
 
 // Aligns a value v to the previous value aligned by align bits.
@@ -30,11 +32,12 @@ T AlignDown(T v, T align)
 }
 
 // Convenience overload for pointer types.
-template <typename T, typename U>
-    requires std::is_pointer_v<T>
+template <typename T, typename U, typename = std::enable_if_t<std::is_pointer_v<T>>>
 T AlignDown(T v, U align)
 {
-    return (T)((uintptr_t)v & ~((uintptr_t)align - 1));
+    auto value = reinterpret_cast<uintptr_t>(v);
+    auto alignment = static_cast<uintptr_t>(align);
+    return reinterpret_cast<T>(value & ~(alignment - 1));
 }
 
 // Returns true if the given ranges [start, end] overlap.
@@ -65,6 +68,6 @@ T MakeMask(int startBit, int width)
     return MakeMask<T>(width) << startBit;
 }
 
-} // namespace eda
+} // namespace hl
 
 #endif

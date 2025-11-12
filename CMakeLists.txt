@@ -4,6 +4,10 @@ project(helplib LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  add_definitions(-DARCH_64BIT)
+endif()
+
 if (WIN32)
   add_definitions(-DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN)
 endif()
@@ -36,8 +40,7 @@ else()
   set(PLATFORM_LIBS dl pthread)
 endif()
 
-add_library(helplib STATIC
-  src/ConsoleEx.cpp
+set(HELPLIB_COMMON_SOURCES
   src/CrashHandler.cpp
   src/ExeFile.cpp
   src/Hooker.cpp
@@ -48,6 +51,15 @@ add_library(helplib STATIC
   src/Patch.cpp
   src/PatternScanner.cpp
   src/StringManip.cpp
+  ${PLATFORM_SOURCES}
+)
+
+if (WIN32)
+  list(APPEND HELPLIB_COMMON_SOURCES src/ConsoleEx.cpp)
+endif()
+
+add_library(helplib STATIC
+  ${HELPLIB_COMMON_SOURCES}
   ${PLATFORM_SOURCES}
 )
 

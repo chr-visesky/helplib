@@ -519,5 +519,7 @@ const IHook* Hooker::hookDetour(uintptr_t location, int nextInstructionOffset, H
 
 void Hooker::unhook(const IHook* pHook)
 {
-    std::erase_if(m_hooks, [pHook](const auto& uptr) { return uptr.get() == pHook; });
+    m_hooks.erase(std::remove_if(m_hooks.begin(), m_hooks.end(),
+                                 [pHook](const auto& uptr) { return uptr.get() == pHook; }),
+                  m_hooks.end());
 }

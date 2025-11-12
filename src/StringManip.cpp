@@ -14,11 +14,11 @@ std::string hl::ToUpper(std::string s)
     return s;
 }
 
-std::string hl::ToHexDump(std::span<const uint8_t> data, size_t bytesPerLine)
+std::string hl::ToHexDump(const uint8_t* data, size_t size, size_t bytesPerLine)
 {
     std::string output;
 
-    for (size_t i = 0; i < data.size(); i++)
+    for (size_t i = 0; i < size; i++)
     {
         // Start new line for every 16 bytes.
         if (i != 0 && i % bytesPerLine == 0)
@@ -38,7 +38,7 @@ std::string hl::ToHexDump(std::span<const uint8_t> data, size_t bytesPerLine)
         output += byte;
 
         // Print ASCII row.
-        if ((i + 1) % bytesPerLine == 0 || i + 1 == data.size())
+        if ((i + 1) % bytesPerLine == 0 || i + 1 == size)
         {
             size_t printedInThisRow = (i % bytesPerLine) + 1;
             // Align to end of data row.

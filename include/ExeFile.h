@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <span>
 #include <cstdint>
 
 
@@ -42,7 +41,7 @@ public:
     // Returns null if not found.
     uintptr_t getExport(const std::string& name) const;
 
-    std::span<const Section> getSections() const { return m_sections; }
+    const std::vector<Section>& getSections() const { return m_sections; }
 
 private:
     std::unique_ptr<class ExeFileImpl> m_impl;

@@ -1,5 +1,8 @@
 #include "hacklib/Input.h"
+#include <cstddef>
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 
 using namespace hl;
@@ -7,9 +10,12 @@ using namespace hl;
 
 void Input::update()
 {
-    for (size_t i = 0; i < m_status.size(); i++)
+    for (std::size_t i = 0; i < m_status.size(); i++)
     {
-        bool keyDown = GetAsyncKeyState(static_cast<int>(i)) < 0;
+        bool keyDown = false;
+#ifdef _WIN32
+        keyDown = GetAsyncKeyState(static_cast<int>(i)) < 0;
+#endif
 
         if (keyDown && !m_status[i].isDown)
             m_status[i].state = InputState::WentDown;

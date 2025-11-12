@@ -148,8 +148,8 @@ hl::MemoryRegion hl::GetMemoryByAddress(uintptr_t adr, int pid)
     hl::MemoryRegion region;
 
     auto memoryMap = hl::GetMemoryMap(pid);
-    auto itRegion = std::ranges::find_if(memoryMap, [adr](const hl::MemoryRegion& r)
-                                         { return adr >= r.base && adr < r.base + r.size; });
+    auto itRegion = std::find_if(memoryMap.begin(), memoryMap.end(), [adr](const hl::MemoryRegion& r)
+                                 { return adr >= r.base && adr < r.base + r.size; });
     if (itRegion != memoryMap.end())
     {
         region = *itRegion;
