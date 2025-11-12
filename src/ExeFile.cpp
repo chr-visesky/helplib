@@ -38,7 +38,7 @@ bool hl::ExeFile::isReloc(uintptr_t rva) const
         throw std::runtime_error("no exe file loaded");
     }
 
-    auto it = std::ranges::find(m_relocs, rva);
+    auto it = std::find(m_relocs.begin(), m_relocs.end(), rva);
     return it != m_relocs.end();
 }
 

@@ -1,4 +1,5 @@
 #include "hacklib/Hooker.h"
+#ifdef _WIN32
 #include "hacklib/Main.h"
 #include "hacklib/PageAllocator.h"
 #include <Windows.h>
@@ -25,8 +26,6 @@ struct Page
     uintptr_t m_begin;
     uintptr_t m_end;
     int m_refs;
-};
-
 class VEHHookManager
 {
 public:
@@ -324,3 +323,13 @@ static LONG CALLBACK VectoredHandler(PEXCEPTION_POINTERS exc)
     // Do not handle any other exceptions.
     return EXCEPTION_CONTINUE_SEARCH;
 }
+#else
+
+using namespace hl;
+
+const IHook* Hooker::hookVEH(uintptr_t, HookCallback_t)
+{
+    return nullptr;
+}
+
+#endif

@@ -4,7 +4,6 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
-#include <span>
 #include <cstdint>
 
 
@@ -27,7 +26,7 @@ bool IsNumber(const std::string& s);
 // Convert a string to uppercase.
 std::string ToUpper(std::string s);
 
-std::string ToHexDump(std::span<const uint8_t> data, size_t bytesPerLine = 16);
+std::string ToHexDump(const uint8_t* data, size_t size, size_t bytesPerLine = 16);
 
 }
 

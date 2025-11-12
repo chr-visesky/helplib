@@ -1,54 +1,45 @@
 #ifndef HACKLIB_CONSOLEEX_H
 #define HACKLIB_CONSOLEEX_H
 
-#include <Windows.h>
+#include <cstdarg>
 #include <functional>
 #include <future>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 namespace hl
 {
+#ifdef _WIN32
+
 struct CONSOLEEX_PARAMETERS
 {
-    // width of console buffer in characters
     int cellsX = 80;
-    // height of visible console buffer in characters
     int cellsYVisible = 20;
-    // height of total console buffer in characters
     int cellsYBuffer = 500;
-    // background color for output and input child windows
     COLORREF bgColor = RGB(0, 0, 0);
-    // text color for output and input child windows
     COLORREF textColor = RGB(192, 192, 192);
-    // specifies if the console can be closed via windows shell
     bool closemenu = false;
 };
 
-
-/*
- * A console with simultaneous input and output for Windows.
- */
 class ConsoleEx
 {
     ConsoleEx(const ConsoleEx&) = delete;
     ConsoleEx& operator=(const ConsoleEx&) = delete;
 
 public:
-    // fetches default initialisation of parameter struct
     static CONSOLEEX_PARAMETERS GetDefaultParameters();
 
-
-public:
     ConsoleEx(HINSTANCE hModule = NULL);
     ~ConsoleEx();
 
-    // opens console and starts handling of all events
-    // waits for private thread to run (eg. will deadlock when called in DllMain)
     bool create(const std::string& windowTitle, CONSOLEEX_PARAMETERS* parameters = nullptr);
 
-    // registers a callback that will be called on input
     void registerInputCallback(void (*cbInput)(std::string));
     template <class F>
     void registerInputCallback(F cbInput)
@@ -60,31 +51,23 @@ public:
     bool isOpen() const;
     HWND getWindowHandle() const;
 
-    // member functions to send output to console
     void vprintf(const char* format, va_list valist);
     void printf(const char* format, ...);
     void print(const std::string& str);
-
 
 private:
     static LRESULT CALLBACK s_WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
     static LRESULT CALLBACK s_EditOutSubclassProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam,
                                                   UINT_PTR subclassId, DWORD_PTR refData);
 
-
-private:
-    // member functions to process window and thread callbacks
     LRESULT wndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT editOutSubclassProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
     void threadProc(std::promise<bool>& p);
 
-    // writes arbitrary string
     void writeString(const char* strOut, int len);
-    // writes arbitrary string to ConsoleBuffer
     void writeStringToRawBuffer(const char* strOut, int len);
 
     void updateScrollState(bool checkTrackPos);
-
 
     std::thread m_thread;
     HINSTANCE m_hModule = NULL;
@@ -99,7 +82,6 @@ private:
     bool m_isScrolledToBottom = true;
     std::vector<char> m_bufferForScrollLock;
     std::vector<int> m_bufferForScrollLockLengths;
-
 
     class RingBuffer
     {
@@ -130,7 +112,6 @@ private:
         {
             int startBlockSz = (m_wid + 2) * m_hei - m_start;
             memcpy(dst, &m_buffer[m_start], startBlockSz * sizeof(wchar_t));
-            // don't overwrite the final null terminator
             memcpy(dst + startBlockSz, &m_buffer[0], (m_start - 2) * sizeof(wchar_t));
         }
 
@@ -147,7 +128,6 @@ private:
         std::vector<wchar_t> m_buffer;
     };
 
-    // abstraction of dirty raw buffer modifications
     class ConsoleBuffer
     {
         ConsoleBuffer(const ConsoleBuffer&) = delete;
@@ -168,7 +148,6 @@ private:
         void clear();
         void flushBackBuffer();
 
-        // function expects input string to not contain special characters like '\r','\n','\t', etc
         void write(wchar_t* str);
         void scrollUp();
 
@@ -195,6 +174,46 @@ private:
 
     } m_rawBuffer;
 };
+
+#else
+
+struct CONSOLEEX_PARAMETERS
+{
+    int cellsX = 80;
+    int cellsYVisible = 20;
+    int cellsYBuffer = 500;
+    unsigned int bgColor = 0;
+    unsigned int textColor = 0;
+    bool closemenu = false;
+};
+
+class ConsoleEx
+{
+public:
+    static CONSOLEEX_PARAMETERS GetDefaultParameters()
+    {
+        return {};
+    }
+
+    explicit ConsoleEx(void* = nullptr) {}
+    ~ConsoleEx() = default;
+
+    bool create(const std::string&, CONSOLEEX_PARAMETERS* = nullptr) { return false; }
+
+    void registerInputCallback(void (*)(std::string)) {}
+    template <class F>
+    void registerInputCallback(F) {}
+
+    void close() {}
+    bool isOpen() const { return false; }
+    void* getWindowHandle() const { return nullptr; }
+
+    void vprintf(const char*, va_list) {}
+    void printf(const char*, ...) {}
+    void print(const std::string&) {}
+};
+
+#endif // _WIN32
 }
 
 #endif

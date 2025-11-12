@@ -124,7 +124,7 @@ std::vector<uintptr_t> PatternScanner::find(const std::vector<std::string>& stri
 
 uintptr_t hl::PatternScanner::findString(const std::string& str, const std::string& moduleName, int instance)
 {
-    if (!moduleMap.contains(moduleName))
+    if (moduleMap.find(moduleName) == moduleMap.end())
         moduleMap[moduleName] = hl::GetModuleByName(moduleName);
     auto hModule = moduleMap[moduleName];
 
@@ -149,11 +149,11 @@ uintptr_t hl::PatternScanner::findString(const std::string& str, const std::stri
     if (!addr)
         throw std::runtime_error("pattern not found");
 
-    if (!exeFileMap.contains(moduleName))
+    if (exeFileMap.find(moduleName) == exeFileMap.end())
         exeFileMap[moduleName] = std::make_unique<ExeFile>();
     ExeFile& exeFile = *exeFileMap[moduleName].get();
 
-    if (!verifyRelocsMap.contains(moduleName))
+    if (verifyRelocsMap.find(moduleName) == verifyRelocsMap.end())
         verifyRelocsMap[moduleName] = exeFile.loadFromMem((uintptr_t)hModule) && exeFile.hasRelocs();
     [[maybe_unused]] const bool verifyWithRelocs = verifyRelocsMap[moduleName];
 
@@ -165,7 +165,7 @@ uintptr_t hl::PatternScanner::findString(const std::string& str, const std::stri
         if (region.hModule == hModule && region.protection == hl::PROTECTION_READ_EXECUTE)
         {
             auto baseAdr = (const uint8_t*)region.base;
-            const size_t regionSize = region.size;
+            size_t regionSize = region.size;
 
 #ifndef ARCH_64BIT
             do
@@ -279,7 +279,7 @@ uintptr_t hl::FindPattern(const std::string& pattern, uintptr_t address, size_t 
     std::vector<char> checkMask;
 
     std::string lowPattern = pattern;
-    std::ranges::transform(lowPattern, lowPattern.begin(), ::tolower);
+    std::transform(lowPattern.begin(), lowPattern.end(), lowPattern.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     lowPattern += " ";
 
     for (size_t i = 0; i < lowPattern.size() / 3; i++)
@@ -337,8 +337,9 @@ const std::vector<hl::MemoryRegion>& hl::GetCodeRegions(const std::string& modul
     }
 
     const static auto memoryMap = hl::GetMemoryMap();
-    std::ranges::copy_if(memoryMap, std::back_inserter(lut[moduleName]), [hModule](const hl::MemoryRegion& r)
-                         { return r.hModule == hModule && r.protection == hl::PROTECTION_READ_EXECUTE; });
+    std::copy_if(memoryMap.begin(), memoryMap.end(), std::back_inserter(lut[moduleName]),
+                 [hModule](const hl::MemoryRegion& r)
+                 { return r.hModule == hModule && r.protection == hl::PROTECTION_READ_EXECUTE; });
     if (lut[moduleName].empty())
     {
         throw std::runtime_error("no code sections found");
