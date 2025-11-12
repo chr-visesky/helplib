@@ -51,6 +51,7 @@ set(HELPLIB_COMMON_SOURCES
   src/Patch.cpp
   src/PatternScanner.cpp
   src/StringManip.cpp
+  ${PLATFORM_SOURCES}
 )
 
 if (WIN32)
